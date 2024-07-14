@@ -1,6 +1,6 @@
 # NextFeedbackChannel
 
-NFC powered surveying system for ease of use to customers.
+NFC powered survey solution for ease of use to customers.
 
 ## Screenshots:
 ### Creating a survey for your company
