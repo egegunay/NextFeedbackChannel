@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Latest Survey Link</title>
+</head>
+<body>
+    <h1>Get Latest Survey Link</h1>
+    <label for="businessId">Business ID:</label>
+    <input type="text" id="businessId" name="businessId" required>
+    <button id="getSurveyLinkButton">Get Latest Survey Link</button>
+    <p id="surveyLink"></p>
+
+    <script>
+        document.getElementById('getSurveyLinkButton').addEventListener('click', async function() {
+            const businessId = document.getElementById('businessId').value;
+            const surveyLinkElement = document.getElementById('surveyLink');
+
+            try {
+                const response = await fetch('/nfcsjob', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    body: businessId
+                });
+
+                const {survey_link} = await response.json();
+                surveyLinkElement.innerHTML = `<a href="${survey_link}" target="_blank">${survey_link}</a>`;
+            } catch (error) {
+                console.error('Error fetching survey link:', error.message);
+                surveyLinkElement.textContent = 'Failed to fetch survey link.';
+            }
+        });
+    </script>
+</body>
+</html>

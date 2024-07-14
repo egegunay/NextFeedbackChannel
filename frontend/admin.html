@@ -1,0 +1,300 @@
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Admin Panel</title>
+	<style>
+		body {
+			display: flex;
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background-color: #222;
+			color: #fff;
+		}
+
+		#sidePanel {
+			width: 250px;
+			background-color: #333;
+			color: #fff;
+			padding: 20px;
+			box-sizing: border-box;
+			border-right: 1px solid #444;
+			height: 100vh;
+			overflow-y: auto;
+		}
+
+		#contentPanel {
+			flex: 1;
+			padding: 20px;
+		}
+
+		.panel {
+			display: none;
+			background-color: #333;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+		}
+
+		.panel.active {
+			display: block;
+		}
+
+		h1 {
+			color: #fff;
+		}
+
+		form {
+			margin-bottom: 20px;
+		}
+
+		label,
+		input,
+		button {
+			display: block;
+			margin-bottom: 10px;
+			color: #fff;
+		}
+
+		input,
+		button {
+			width: 100%;
+			padding: 10px;
+			box-sizing: border-box;
+			font-size: 16px;
+			background-color: #444;
+			border: none;
+			border-radius: 4px;
+			color: #fff;
+		}
+
+		button {
+			background-color: #4CAF50;
+			color: white;
+			cursor: pointer;
+		}
+
+		button:hover {
+			background-color: #45a049;
+		}
+
+		.option-input {
+			display: flex;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+
+		.option-input input {
+			margin-right: 10px;
+		}
+
+		.remove-button,
+		.add-button {
+			background-color: #f44336;
+			color: white;
+			border: none;
+			cursor: pointer;
+			padding: 6px 10px;
+			border-radius: 4px;
+			width: auto;
+		}
+
+		.add-button {
+			background-color: #4CAF50;
+		}
+
+		.remove-button:hover,
+		.add-button:hover {
+			background-color: #d32f2f;
+		}
+
+		/* Updated styles for question input alignment and spacing */
+		.question-input {
+			display: flex;
+			align-items: center;
+			margin-bottom: 20px;
+		}
+
+		.question-input input {
+			flex: 1;
+			margin-right: 10px;
+		}
+
+		.add-button-container {
+			display: flex;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+
+		.add-button {
+			margin-right: 10px;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="sidePanel">
+		<h2>Admin Panel</h2>
+		<ul>
+			<li><a href="#"  style="color: inherit;" onclick="showPanel('businessPanel')">Create Business</a></li>
+			<li><a href="#"  style="color: inherit;" onclick="showPanel('surveyPanel')">Create Survey</a></li>
+			<li><a href="#"  style="color: inherit;" onclick="showPanel('surveyLinkPanel')">Get Survey Link</a></li>
+		</ul>
+	</div>
+	<div id="contentPanel">
+		<div id="businessPanel" class="panel active">
+			<h1>Create a Business</h1>
+			<form id="businessForm">
+				<label for="businessName">Business Name:</label>
+				<input type="text" id="businessName" name="businessName" required="">
+				<button type="submit">Create</button>
+			</form>
+			<p id="businessResponseMessage"></p>
+		</div>
+		<div id="surveyLinkPanel" class="panel">
+			<h1>Get Latest Survey Link</h1>
+			<form id="surveyLinkForm">
+				<label for="businessId">Business ID:</label>
+				<input type="text" id="businessId" name="businessId" required="">
+				<button type="button" id="getSurveyLinkButton">Get Link</button>
+			</form>
+			<p id="surveyLink"></p>
+		</div>
+		<div id="surveyPanel" class="panel">
+			<h1>Create a Survey</h1>
+			<form id="surveyForm">
+				<label for="business_id">Business ID:</label>
+				<input type="text" id="business_id" name="business_id" required="">
+
+				<label for="question">Question:</label>
+				<input type="text" id="question" name="question" required="">
+
+				<div id="optionsContainer" style="
+	margin-top: 20px;
+">
+					<!-- Default option that cannot be removed -->
+					<div class="option-input">
+						<input type="text" class="option" name="option" placeholder="Option" required="" style="
+	margin-right:  -10px;
+">
+					</div>
+				</div>
+
+				<div class="add-button-container">
+					<button type="button" class="add-button" onclick="addOption()">+</button>
+				</div>
+
+				<button type="submit">Submit</button>
+			</form>
+			<p id="surveyResponseMessage"></p>
+		</div>
+	</div>
+
+	<script>
+		function showPanel(panelId) {
+			const panels = document.querySelectorAll('.panel');
+			panels.forEach(panel => panel.classList.remove('active'));
+			document.getElementById(panelId).classList.add('active');
+		}
+
+		document.getElementById('businessForm').addEventListener('submit', async function (event) {
+			event.preventDefault();
+
+			const businessName = document.getElementById('businessName').value;
+			const businessResponseMessage = document.getElementById('businessResponseMessage');
+
+			try {
+				const response = await fetch('/businessCreate', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'text/plain'
+					},
+					body: businessName
+				});
+
+				const text = await response.text();
+				businessResponseMessage.textContent = text;
+			} catch (error) {
+				console.error(error);
+				businessResponseMessage.textContent = 'Error: Unable to submit the business.';
+			}
+		});
+
+		document.getElementById('getSurveyLinkButton').addEventListener('click', async function () {
+			const businessId = document.getElementById('businessId').value;
+			const surveyLinkElement = document.getElementById('surveyLink');
+
+			try {
+				const response = await fetch('/nfcsjob', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'text/plain'
+					},
+					body: businessId
+				});
+
+				const { survey_link } = await response.json();
+				surveyLinkElement.innerHTML = `<a style="color: inherit;" href="${survey_link}" target="_blank">${survey_link}</a>`;
+			} catch (error) {
+				console.error('Error fetching survey link:', error.message);
+				surveyLinkElement.textContent = 'Failed to fetch survey link.';
+			}
+		});
+
+		function addOption() {
+			const optionsContainer = document.getElementById('optionsContainer');
+			const newOptionInput = document.createElement('div');
+			newOptionInput.className = 'option-input';
+			newOptionInput.innerHTML = `
+				<input type="text" class="option" name="option" placeholder="Option" required>
+				<button type="button" class="remove-button" onclick="removeOption(this)">-</button>
+			`;
+			optionsContainer.appendChild(newOptionInput);
+		}
+
+		function removeOption(button) {
+			const optionInput = button.parentElement;
+			if (optionInput.parentNode.children.length > 1) {
+				optionInput.remove();
+			} else {
+				alert('At least one option is required.');
+			}
+		}
+
+		// Ensure there's always at least one option on form load
+		document.addEventListener('DOMContentLoaded', function () {
+			addOption();
+		});
+
+		document.getElementById('surveyForm').addEventListener('submit', async function (event) {
+			event.preventDefault();
+
+			const business_id = document.getElementById('business_id').value;
+			const question = document.getElementById('question').value;
+			const options = Array.from(document.getElementsByClassName('option')).map(input => input.value);
+			const surveyResponseMessage = document.getElementById('surveyResponseMessage');
+
+			try {
+				const response = await fetch('/surveyCreate', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ business_id, question, options })
+				});
+
+				const text = await response.text();
+				surveyResponseMessage.textContent = text;
+			} catch (error) {
+				console.error(error);
+				surveyResponseMessage.textContent = 'Error: Unable to submit the survey.';
+			}
+		});
+	</script>
+
+
+</body>
+
+</html>
