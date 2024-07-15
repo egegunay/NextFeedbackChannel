@@ -1,6 +1,6 @@
 # NextFeedbackChannel
 
-NFC powered survey solution for ease of use to customers.
+Streamlined NFC Surveys: Effortless, Elegant, and User-Friendly.
 
 ## Screenshots:
 ### Creating a survey for your company
