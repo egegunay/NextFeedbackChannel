@@ -25,10 +25,46 @@ app.get('/adminpage', async c => {
 	return c.html(decoder.decode(data))
 })
 
-app.get('/nfcsjob', async c => {
+app.get('/survey/:survey-id', async (c) => {
 	const decoder = new TextDecoder("utf-8");
-	const data = await Deno.readFile("./frontend/nfc.html");
+	const data = await Deno.readFile("./frontend/frontend.html");
 	return c.html(decoder.decode(data))
+})
+
+app.get('/survey/:survey-id/feedback', async (c) => {
+	// Connect to DB to get the feedbacks
+	const id = c.req.param('survey-id')
+	const query = `
+	select * from feedback where survey_id = $1`;
+
+	try {
+		const fb = await client.queryArray({
+			text: String.raw`${query}`,
+			args: [id]
+		});
+
+		return c.json(fb.rows);
+	} catch (error) {
+		return console.error(error);
+	}
+})
+
+app.get('/business/:business-id/feedback', async (c) => {
+	// Connect to DB to get the feedbacks
+	const id = c.req.param('business-id')
+	const query = `
+	select * from feedback f join survey s on f.survey_id = s.id where s.business_id = $1`;
+
+	try {
+		const fb = await client.queryArray({
+			text: String.raw`${query}`,
+			args: [id]
+		});
+
+		return c.json(fb.rows);
+	} catch (error) {
+		return console.error(error);
+	}
 })
 
 app.post('/nfcsjob', async c => {
@@ -54,12 +90,6 @@ app.post('/nfcsjob', async c => {
 	}
 })
 
-app.get('/survey/:survey-id', async (c) => {
-	const decoder = new TextDecoder("utf-8");
-	const data = await Deno.readFile("./frontend/frontend.html");
-	return c.html(decoder.decode(data))
-})
-
 app.post('/survey/:survey-id/feedback', async (c) => {
 	// Connect to DB to create the feedback
 
@@ -82,14 +112,6 @@ app.post('/survey/:survey-id/feedback', async (c) => {
 	}
 });
 
-// Rest is never exposed to the survey filler
-
-app.get('/surveyCreate', async (c) => {
-	const decoder = new TextDecoder("utf-8");
-	const data = await Deno.readFile("./frontend/surveyCreate.html");
-	return c.html(decoder.decode(data))
-})
-
 app.post('/surveyCreate', async (c) => {
 	// Connect to DB to create the survey
 	const id = crypto.randomUUID();
@@ -110,12 +132,6 @@ app.post('/surveyCreate', async (c) => {
 		console.error(error);
 		return c.text(`error: "Internal Server Error"`);
 	}
-})
-
-app.get('/businessCreate', async (c) => {
-	const decoder = new TextDecoder("utf-8");
-	const data = await Deno.readFile("./frontend/businessCreate.html");
-	return c.html(decoder.decode(data))
 })
 
 app.post('/businessCreate', async (c) => {
@@ -169,42 +185,6 @@ app.post('/survey/:survey-id', async (c) => {
 		});
 
 		return c.json(qna.rows[0][0] as JSON);
-	} catch (error) {
-		return console.error(error);
-	}
-})
-
-app.get('/survey/:survey-id/feedback', async (c) => {
-	// Connect to DB to get the feedbacks
-	const id = c.req.param('survey-id')
-	const query = `
-	select * from feedback where survey_id = $1`;
-
-	try {
-		const fb = await client.queryArray({
-			text: String.raw`${query}`,
-			args: [id]
-		});
-
-		return c.json(fb.rows);
-	} catch (error) {
-		return console.error(error);
-	}
-})
-
-app.get('/business/:business-id/feedback', async (c) => {
-	// Connect to DB to get the feedbacks
-	const id = c.req.param('business-id')
-	const query = `
-	select * from feedback f join survey s on f.survey_id = s.id where s.business_id = $1`;
-
-	try {
-		const fb = await client.queryArray({
-			text: String.raw`${query}`,
-			args: [id]
-		});
-
-		return c.json(fb.rows);
 	} catch (error) {
 		return console.error(error);
 	}
