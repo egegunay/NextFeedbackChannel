@@ -33,8 +33,7 @@ CREATE TABLE IF NOT EXISTS survey (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     business_id VARCHAR(255) NOT NULL,
-    question TEXT NOT NULL,
-    answers TEXT[] NOT NULL,
+    questions JSONB[] -- Unsure.
     FOREIGN KEY (business_id) REFERENCES business(id)
 );
 
@@ -44,7 +43,7 @@ CREATE TABLE IF NOT EXISTS feedback (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     survey_id VARCHAR(255) NOT NULL,
-    payload JSONB, -- Using JSONB for generic payload storage
+    payload JSONB[], -- Unsure...
     FOREIGN KEY (survey_id) REFERENCES survey(id)
 );
 ```

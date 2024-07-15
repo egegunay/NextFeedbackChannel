@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -83,7 +84,14 @@
 		.option-input {
 			display: flex;
 			align-items: center;
-			margin-bottom: 10px;
+			margin-bottom: 5px;
+		}
+
+		.option-input:first-child {
+			display: flex;
+			align-items: center;
+			margin-top: 30px;
+			margin-bottom: 5px;
 		}
 
 		.option-input input {
@@ -131,6 +139,40 @@
 		.add-button {
 			margin-right: 10px;
 		}
+
+		.question-container {
+			margin-bottom: 20px;
+		}
+
+		.question-container:last-child {
+			margin-bottom: 0;
+		}
+
+		.question-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 10px;
+		}
+
+		.question-header h2 {
+			margin: 0;
+		}
+
+		.remove-question-button {
+			background-color: #f44336;
+			color: white;
+			border: none;
+			cursor: pointer;
+			padding: 6px 10px;
+			border-radius: 4px;
+			width: auto;
+			margin-bottom: initial;
+		}
+
+		.remove-question-button:hover {
+			background-color: #d32f2f;
+		}
 	</style>
 </head>
 
@@ -138,9 +180,9 @@
 	<div id="sidePanel">
 		<h2>Admin Panel</h2>
 		<ul>
-			<li><a href="#"  style="color: inherit;" onclick="showPanel('businessPanel')">Create Business</a></li>
-			<li><a href="#"  style="color: inherit;" onclick="showPanel('surveyPanel')">Create Survey</a></li>
-			<li><a href="#"  style="color: inherit;" onclick="showPanel('surveyLinkPanel')">Get Survey Link</a></li>
+			<li><a href="#" style="color: inherit;" onclick="showPanel('businessPanel')">Create Business</a></li>
+			<li><a href="#" style="color: inherit;" onclick="showPanel('surveyPanel')">Create Survey</a></li>
+			<li><a href="#" style="color: inherit;" onclick="showPanel('surveyLinkPanel')">Get Survey Link</a></li>
 		</ul>
 	</div>
 	<div id="contentPanel">
@@ -168,22 +210,26 @@
 				<label for="business_id">Business ID:</label>
 				<input type="text" id="business_id" name="business_id" required="">
 
-				<label for="question">Question:</label>
-				<input type="text" id="question" name="question" required="">
-
-				<div id="optionsContainer" style="
-	margin-top: 20px;
-">
-					<!-- Default option that cannot be removed -->
-					<div class="option-input">
-						<input type="text" class="option" name="option" placeholder="Option" required="" style="
-	margin-right:  -10px;
-">
+				<div id="questionsContainer">
+					<div class="question-container">
+						<div class="question-header">
+							<h2>Question 1</h2>
+							<button type="button" class="remove-question-button"
+								onclick="removeQuestion(this)">Remove</button>
+						</div>
+						<input type="text" class="question" name="question[]" placeholder="Question" required="">
+						<div class="optionsContainer">
+							<div class="option-input">
+								<input type="text" class="option" name="option[]" placeholder="Option" required="">
+								<button type="button" class="remove-button" onclick="removeOption(this)">-</button>
+							</div>
+						</div>
+						<button type="button" class="add-button" onclick="addOption(this)">Add Option</button>
 					</div>
 				</div>
 
 				<div class="add-button-container">
-					<button type="button" class="add-button" onclick="addOption()">+</button>
+					<button type="button" class="add-button" onclick="addQuestion()">Add Question</button>
 				</div>
 
 				<button type="submit">Submit</button>
@@ -197,6 +243,61 @@
 			const panels = document.querySelectorAll('.panel');
 			panels.forEach(panel => panel.classList.remove('active'));
 			document.getElementById(panelId).classList.add('active');
+		}
+
+		let questionCount = 1;
+
+		function addQuestion() {
+			questionCount++;
+			const questionsContainer = document.getElementById('questionsContainer');
+			const newQuestionContainer = document.createElement('div');
+			newQuestionContainer.className = 'question-container';
+			newQuestionContainer.innerHTML = `
+				<div class="question-header">
+					<h2>Question ${questionCount}</h2>
+					<button type="button" class="remove-question-button" onclick="removeQuestion(this)">Remove</button>
+				</div>
+				<input type="text" class="question" name="question[]" placeholder="Question" required="">
+				<div class="optionsContainer">
+					<div class="option-input">
+						<input type="text" class="option" name="option[]" placeholder="Option" required="">
+						<button type="button"  class="remove-button" onclick="removeOption(this)">-</button>
+					</div>
+				</div>
+				<button type="button" class="add-button" onclick="addOption(this)">Add Option</button>
+			`;
+			questionsContainer.appendChild(newQuestionContainer);
+		}
+
+		function removeQuestion(button) {
+			const questionContainer = button.closest('.question-container');
+			if (questionCount > 1) {
+				questionContainer.remove();
+				questionCount--;
+				updateQuestionNumbers();
+			} else {
+				alert('At least one question is required.');
+			}
+		}
+
+		function addOption(button) {
+			const optionsContainer = button.previousElementSibling;
+			const newOptionInput = document.createElement('div');
+			newOptionInput.className = 'option-input';
+			newOptionInput.innerHTML = `
+				<input type="text" class="option" name="option[]" placeholder="Option" required="">
+				<button type="button" class="remove-button" onclick="removeOption(this)">-</button>
+			`;
+			optionsContainer.appendChild(newOptionInput);
+		}
+
+		function removeOption(button) {
+			const optionInput = button.parentElement;
+			if (optionInput.parentNode.children.length > 1) {
+				optionInput.remove();
+			} else {
+				alert('At least one option is required.');
+			}
 		}
 
 		document.getElementById('businessForm').addEventListener('submit', async function (event) {
@@ -214,8 +315,8 @@
 					body: businessName
 				});
 
-				const text = await response.text();
-				businessResponseMessage.textContent = text;
+				const { business_id } = await response.json();
+				businessResponseMessage.innerHTML = `<a style="color: inherit;">Business ID: ${business_id}</a>`;
 			} catch (error) {
 				console.error(error);
 				businessResponseMessage.textContent = 'Error: Unable to submit the business.';
@@ -243,38 +344,26 @@
 			}
 		});
 
-		function addOption() {
-			const optionsContainer = document.getElementById('optionsContainer');
-			const newOptionInput = document.createElement('div');
-			newOptionInput.className = 'option-input';
-			newOptionInput.innerHTML = `
-				<input type="text" class="option" name="option" placeholder="Option" required>
-				<button type="button" class="remove-button" onclick="removeOption(this)">-</button>
-			`;
-			optionsContainer.appendChild(newOptionInput);
-		}
-
-		function removeOption(button) {
-			const optionInput = button.parentElement;
-			if (optionInput.parentNode.children.length > 1) {
-				optionInput.remove();
-			} else {
-				alert('At least one option is required.');
-			}
-		}
-
-		// Ensure there's always at least one option on form load
-		document.addEventListener('DOMContentLoaded', function () {
-			addOption();
-		});
-
 		document.getElementById('surveyForm').addEventListener('submit', async function (event) {
 			event.preventDefault();
 
-			const business_id = document.getElementById('business_id').value;
-			const question = document.getElementById('question').value;
-			const options = Array.from(document.getElementsByClassName('option')).map(input => input.value);
+			const formData = new FormData(document.getElementById('surveyForm'));
+			const businessId = formData.get('business_id');
+			const questions = formData.getAll('question[]');
+
+			const questionOptions = Array.from(document.querySelectorAll('.optionsContainer')).map(optionsContainer =>
+				Array.from(optionsContainer.querySelectorAll('.option')).map(option => option.value)
+			);
+
 			const surveyResponseMessage = document.getElementById('surveyResponseMessage');
+
+			const data = {
+				business_id: businessId,
+				questions: questions.map((question, index) => ({
+					question,
+					options: questionOptions[index]
+				}))
+			};
 
 			try {
 				const response = await fetch('/surveyCreate', {
@@ -282,7 +371,7 @@
 					headers: {
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify({ business_id, question, options })
+					body: JSON.stringify(data)
 				});
 
 				const text = await response.text();
@@ -293,8 +382,6 @@
 			}
 		});
 	</script>
-
-
 </body>
 
 </html>

@@ -29,9 +29,30 @@
             background-color: #f0f0f0;
         }
 
+        .selected {
+            background-color: #b3e0ff;
+        }
+
         .question {
             font-size: 30px;
             margin-bottom: 30px;
+        }
+
+        .navigation {
+            margin-top: 20px;
+        }
+
+        .navigation button {
+            cursor: pointer;
+            padding: 10px 20px;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            margin: 0 10px;
+        }
+
+        .navigation button:hover {
+            background-color: #ccc;
         }
     </style>
 </head>
@@ -40,20 +61,33 @@
     <div id="survey">
         <div id="question" class="question"></div>
         <div id="answers"></div>
+        <div class="navigation">
+            <button id="prevBtn" onclick="previousQuestion()">Previous</button>
+            <button id="nextBtn" onclick="nextQuestion()">Next</button>
+            <button id="submitBtn" style="display: none;" onclick="submitSurvey()">Submit</button>
+        </div>
     </div>
 
     <script>
-        async function fetchSurvey() {
+        let currentQuestionIndex = 0;
+        let surveyData = [];
+
+        function getSurveyID() {
+            // Horrible.
             const currentPath = window.location.pathname;
             const uuidRegex = /\/survey\/([a-fA-F0-9-]+)[\/?]?.*/;
             const match = currentPath.match(uuidRegex);
-            
+
             if (!match) {
                 console.error('Survey ID not found in URL');
                 return;
             }
 
-            const surveyId = match[1]; // There is a better way to do this, next release though.
+            return match[1];
+        }
+
+        async function fetchSurvey() {
+            const surveyId = getSurveyID()
 
             try {
                 const response = await fetch(`/survey/${surveyId}`, {
@@ -63,38 +97,92 @@
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const surveyData = await response.json();
 
-                displaySurvey(surveyData, surveyId);
+                surveyData = await response.json();
+
+                displaySurvey();
             } catch (error) {
                 console.error('Error fetching survey:', error.message);
             }
         }
 
-        function displaySurvey(surveyData, surveyId) {
+        function displaySurvey() {
             const questionElement = document.getElementById('question');
             const answersElement = document.getElementById('answers');
 
-            questionElement.textContent = surveyData.question;
+            questionElement.textContent = surveyData[currentQuestionIndex].question;
 
             answersElement.innerHTML = '';
-            surveyData.options.forEach((option, index) => {
+            surveyData[currentQuestionIndex].options.forEach((option, index) => {
                 const answerElement = document.createElement('div');
                 answerElement.className = 'answer';
                 answerElement.textContent = option;
-                answerElement.onclick = () => sendFeedback(surveyId, index + 1);
+                answerElement.onclick = () => selectAnswer(index);
                 answersElement.appendChild(answerElement);
+            });
+
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+
+            prevBtn.disabled = currentQuestionIndex === 0;
+            nextBtn.disabled = currentQuestionIndex === surveyData.length - 1;
+
+            if (currentQuestionIndex === surveyData.length - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'inline-block';
+            } else {
+                nextBtn.style.display = 'inline-block';
+                submitBtn.style.display = 'none';
+            }
+        }
+
+        function selectAnswer(answerIndex) {
+            surveyData[currentQuestionIndex].selectedAnswer = answerIndex;
+
+            // Remove any previously selected answer styles
+            const answers = document.querySelectorAll('.answer');
+            answers.forEach((answer, index) => {
+                if (index === answerIndex) {
+                    answer.classList.add('selected');
+                } else {
+                    answer.classList.remove('selected');
+                }
             });
         }
 
-        async function sendFeedback(surveyId, feedback) {
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displaySurvey();
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < surveyData.length - 1) {
+                currentQuestionIndex++;
+                displaySurvey();
+            }
+        }
+
+        async function submitSurvey() {
+            const surveyId = getSurveyID()
             try {
+                const responses = surveyData.map(question => ({
+                    question: question.question,
+                    selectedAnswer: question.options[question.selectedAnswer]
+                }));
+
                 const response = await fetch(`/survey/${surveyId}/feedback`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ feedback: feedback.toString() }),
+                    body: JSON.stringify(responses),
                 });
 
                 if (!response.ok) {
@@ -102,9 +190,8 @@
                 }
 
                 const data = await response.text();
-                console.log('Feedback received:', data);
             } catch (error) {
-                console.error('Error sending feedback:', error.message);
+                console.error('Error submitting survey:', error.message);
             }
         }
 

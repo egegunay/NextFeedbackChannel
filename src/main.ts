@@ -48,7 +48,9 @@ app.post('/nfcsjob', async c => {
 			"survey_link": `survey/${ids.rows[0][0]}`
 		});
 	} catch (error) {
-		return console.error(error);
+		return c.json({
+			"survey_link": `${error}`
+		});
 	}
 })
 
@@ -62,7 +64,7 @@ app.post('/survey/:survey-id/feedback', async (c) => {
 	// Connect to DB to create the feedback
 
 	const feedbackID = crypto.randomUUID();
-	const payload: JSON = await c.req.json();
+	const payload: JSON[] = await c.req.json();
 	const surveyID = c.req.param('survey-id');
 
 	const query = `
@@ -91,16 +93,16 @@ app.get('/surveyCreate', async (c) => {
 app.post('/surveyCreate', async (c) => {
 	// Connect to DB to create the survey
 	const id = crypto.randomUUID();
-	const payload: { business_id: string, question: string, options: string[] } = await c.req.json()
+	const payload: { business_id: string, questions: JSON[] } = await c.req.json()
 
 	const query = `
-	INSERT INTO survey (id, business_id, created_at, updated_at, question, answers)
-	VALUES ($1, $2, NOW(), NOW(), $3, $4);`;
+	INSERT INTO survey (id, business_id, created_at, updated_at, questions)
+	VALUES ($1, $2, NOW(), NOW(), $3);`;
 
 	try {
 		await client.queryArray({
 			text: String.raw`${query}`,
-			args: [id, payload.business_id, payload.question, payload.options]
+			args: [id, payload.business_id, payload.questions]
 		});
 
 		return c.text(`Survey created successfully`);
@@ -129,11 +131,27 @@ app.post('/businessCreate', async (c) => {
 			text: String.raw`${query}`,
 			args: [id, name]
 		});
-
-		return c.text(`Business created successfully`);
 	} catch (error) {
 		console.error(error);
 		return c.text(`error: "Internal Server Error"`);
+	}
+
+	const resultQuery = `
+	select id from business where name = $1 order by created_at desc limit 1;`
+
+	try {
+		const ids = await client.queryArray({
+			text: String.raw`${resultQuery}`,
+			args: [name]
+		});
+
+		return c.json({
+			"business_id": `${ids.rows[0][0]}`
+		});
+	} catch (error) {
+		return c.json({
+			"business_id": `${error}`
+		});
 	}
 })
 
@@ -142,7 +160,7 @@ app.post('/survey/:survey-id', async (c) => {
 	const id = c.req.param('survey-id')
 
 	const query = `
-	select question, answers from survey where id = $1 order by created_at desc limit 1;`
+	select questions from survey where id = $1 order by created_at desc limit 1;`
 
 	try {
 		const qna = await client.queryArray({
@@ -150,10 +168,7 @@ app.post('/survey/:survey-id', async (c) => {
 			args: [id]
 		});
 
-		return c.json({
-			"question": `${qna.rows[0][0]}`,
-			"options": qna.rows[0][1]
-		});
+		return c.json(qna.rows[0][0] as JSON);
 	} catch (error) {
 		return console.error(error);
 	}
