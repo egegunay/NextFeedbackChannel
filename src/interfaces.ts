@@ -18,3 +18,13 @@ export interface Feedback<T> extends BaseInterface {
 	surveyId: string;
 	payload: T;
 }
+
+export type SurveyCreatePayload = {
+	business_id: string;
+	questions: Record<string, JSON[]>[];
+};
+
+export type FeedbackPayload = {
+	question_id: string;
+	answer: string;
+}[];
