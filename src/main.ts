@@ -184,15 +184,12 @@ app.post('/survey/:survey-id', async (c: Context) => {
 app.post('/surveyUpdate', async (c: Context) => {
 	const payload: SurveyUpdatePayload = await c.req.json();
 
-	const formattedQuestions: string = payload.new_survey.map(q => JSON.stringify(q)).join(", ");
-	// This is not good. I want a better way to do this next release. I heard JSONB[] is also awful. Not sure.
-
-	const query = `update survey set questions = array[$1::jsonb] where id = $2;`;
+	const query = `update survey set questions = $1::jsonb[] where id = $2;`;
 
 	try {
 		await client.queryArray({
 			text: query,
-			args: [formattedQuestions, payload.survey_id]
+			args: [payload.new_survey, payload.survey_id]
 		});
 
 		return c.text("Survey updated successfully");

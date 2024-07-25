@@ -183,6 +183,7 @@
 			<li><a href="#" style="color: inherit;" onclick="showPanel('businessPanel')">Create Business</a></li>
 			<li><a href="#" style="color: inherit;" onclick="showPanel('surveyPanel')">Create Survey</a></li>
 			<li><a href="#" style="color: inherit;" onclick="showPanel('surveyLinkPanel')">Get Survey Link</a></li>
+			<li><a href="#" style="color: inherit;" onclick="showPanel('surveyUpdatePanel')">Update Survey</a></li>
 		</ul>
 	</div>
 	<div id="contentPanel">
@@ -229,12 +230,44 @@
 				</div>
 
 				<div class="add-button-container">
-					<button type="button" class="add-button" onclick="addQuestion()">Add Question</button>
+					<button type="button" class="add-button" onclick="addQuestion(false)">Add Question</button>
 				</div>
 
 				<button type="submit">Submit</button>
 			</form>
 			<p id="surveyResponseMessage"></p>
+		</div>
+		<div id="surveyUpdatePanel" class="panel">
+			<h1>Update a Survey</h1>
+			<form id="surveyUpdateForm">
+				<label for="survey_id">Survey ID:</label>
+				<input type="text" id="survey_id" name="survey_id" required="">
+
+				<div id="questionUpdateContainer">
+					<div class="question-container">
+						<div class="question-header">
+							<h2>Question 1</h2>
+							<button type="button" class="remove-question-button"
+								onclick="removeQuestion(this)">Remove</button>
+						</div>
+						<input type="text" class="question" name="question[]" placeholder="Question" required="">
+						<div class="optionsContainer">
+							<div class="option-input">
+								<input type="text" class="option" name="option[]" placeholder="Option" required="">
+								<button type="button" class="remove-button" onclick="removeOption(this)">-</button>
+							</div>
+						</div>
+						<button type="button" class="add-button" onclick="addOption(this)">Add Option</button>
+					</div>
+				</div>
+
+				<div class="add-button-container">
+					<button type="button" class="add-button" onclick="addQuestion(true)">Add Question</button>
+				</div>
+
+				<button type="submit">Submit</button>
+			</form>
+			<p id="surveyUpdateResponse"></p>
 		</div>
 	</div>
 
@@ -247,9 +280,18 @@
 
 		let questionCount = 1;
 
-		function addQuestion() {
+		function addQuestion(update) {
 			questionCount++;
-			const questionsContainer = document.getElementById('questionsContainer');
+			let questionsContainer;
+
+			if (update) {
+				questionsContainer = document.getElementById('questionUpdateContainer')
+			} else {
+				questionsContainer = document.getElementById('questionsContainer');
+			}
+
+			console.log(questionsContainer)
+
 			const newQuestionContainer = document.createElement('div');
 			newQuestionContainer.className = 'question-container';
 			newQuestionContainer.innerHTML = `
@@ -274,7 +316,6 @@
 			if (questionCount > 1) {
 				questionContainer.remove();
 				questionCount--;
-				updateQuestionNumbers();
 			} else {
 				alert('At least one question is required.');
 			}
@@ -379,6 +420,45 @@
 			} catch (error) {
 				console.error(error);
 				surveyResponseMessage.textContent = 'Error: Unable to submit the survey.';
+			}
+		});
+
+		document.getElementById('surveyUpdateForm').addEventListener('submit', async function (event) {
+			event.preventDefault();
+
+			const formData = new FormData(document.getElementById('surveyUpdateForm'));
+			const survey_id = formData.get('survey_id');
+			const questions = formData.getAll('question[]');
+
+			const questionOptions = Array.from(document.querySelectorAll('.optionsContainer')).map(optionsContainer =>
+				Array.from(optionsContainer.querySelectorAll('.option')).map(option => option.value)
+			);
+
+			const surveyUpdateResponse = document.getElementById('surveyUpdateResponse');
+			console.log(questionOptions)
+
+			const data = {
+				survey_id: survey_id,
+				new_survey: questions.map((question, index) => ({
+					question,
+					options: questionOptions[index + 1]
+				}))
+			};
+
+			try {
+				const response = await fetch('/surveyUpdate', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(data)
+				});
+
+				const text = await response.text();
+				surveyUpdateResponse.textContent = text;
+			} catch (error) {
+				console.error(error);
+				surveyUpdateResponse.textContent = 'Error: Unable to update the survey.';
 			}
 		});
 	</script>
