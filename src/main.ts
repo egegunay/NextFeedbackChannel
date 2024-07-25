@@ -1,7 +1,7 @@
 import { Hono, Context } from 'hono'
 import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
-import { FeedbackPayload, SurveyCreatePayload } from "./interfaces.ts";
+import { FeedbackPayload, SurveyCreatePayload, SurveyUpdatePayload } from "./interfaces.ts";
 
 const env = await load();
 
@@ -180,5 +180,26 @@ app.post('/survey/:survey-id', async (c: Context) => {
 		return c.json({ error: "Internal Server Error" }, 500);
 	}
 });
+
+app.post('/surveyUpdate', async (c: Context) => {
+	const payload: SurveyUpdatePayload = await c.req.json();
+
+	const formattedQuestions: string = payload.new_survey.map(q => JSON.stringify(q)).join(", ");
+	// This is not good. I want a better way to do this next release. I heard JSONB[] is also awful. Not sure.
+
+	const query = `update survey set questions = array[$1::jsonb] where id = $2;`;
+
+	try {
+		await client.queryArray({
+			text: query,
+			args: [formattedQuestions, payload.survey_id]
+		});
+
+		return c.text("Survey updated successfully");
+	} catch (error) {
+		console.error(error);
+		return c.text(`error: "Internal Server Error"`, 500);
+	}
+})
 
 Deno.serve(app.fetch);

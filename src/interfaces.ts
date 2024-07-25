@@ -24,6 +24,11 @@ export type SurveyCreatePayload = {
 	questions: Record<string, JSON[]>[];
 };
 
+export type SurveyUpdatePayload = {
+	survey_id: string;
+	new_survey: Record<string, JSON[]>[];
+}
+
 export type FeedbackPayload = {
 	question_id: string;
 	answer: string;

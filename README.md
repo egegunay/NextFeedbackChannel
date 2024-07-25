@@ -47,5 +47,3 @@ CREATE TABLE IF NOT EXISTS feedback (
     FOREIGN KEY (survey_id) REFERENCES survey(id)
 );
 ```
-
-### Check out the [flow](flow.md) as well!
